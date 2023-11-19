@@ -1,7 +1,6 @@
 package org.example;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.*;
 import java.util.List;
 
 import models.*;
@@ -10,51 +9,48 @@ import models.*;
 public class Main {
     public static void main(String[] args) {
         try{
-            Connection con = DriverManager.getConnection("jdbc:h2:file:D:\\IdeaProjects\\Data_bases\\data_bases");
+            StudentsDb db = new StudentsDb();
+            db.connect("jdbc:h2:file:D:\\IdeaProjects\\Data_bases\\data_bases");
 
-            Student model = new Student();
-            create(con, model);
+            db.getStudentDao().createTable();
 
             Path path = Path.of("start_db.txt");
             List<String> list = Files.readAllLines(path);
+            Student model = new Student();
             for (String str : list) {
                 String[] parts = str.split(";");
                 model.name.setValue(parts[0]);
                 model.address.setValue(parts[1]);
-                insert(con, model);
+                model.age.setValue(21);
+                model.grp.setValue("20ПМ");
+                db.getStudentDao().insertStudent(model);
             }
 
-            selectAll(con, model);
+            PrintStudents(db.getStudentDao().getStudentsByGroup("20ПМ"));
 
             model.name.setValue("Горелов Викентий Тихонович");
             model.address.setValue("г. Уфа пер. 2-й Благоварский д. 14");
-            insert(con, model);
+            model.age.setValue(17);
+            model.grp.setValue("23ПМ");
+            db.getStudentDao().insertStudent(model);
 
-            selectAll(con, model);
+            System.out.println();
+            PrintStudents(db.getStudentDao().getStudentsByGroup("23ПМ"));
 
-            con.close();
+            System.out.println();
+            PrintStudents(db.getStudentDao().getStudents(18, 25));
+
+            System.out.println();
+            db.getStudentDao().deleteStudent(8);
+            PrintStudents(db.getStudentDao().getStudentsByGroup("20ПМ"));
         }catch (Exception e){
             e.printStackTrace();
         }
     }
-    public static void create(Connection con, Model model) throws Exception {
-        Statement st = con.createStatement();
-        st.execute(model.createSQL());
-    }
-
-    public static void insert(Connection con, Model model) throws Exception {
-        Statement st = con.createStatement();
-        st.execute(model.insertSQL());
-    }
-
-    public static void selectAll(Connection con, Model model){
-        try {
-            Statement st = con.createStatement();
-            ResultSet rs = st.executeQuery(model.selectAllSQL());
-            model.printAll(rs);
-        }catch (SQLException | IllegalAccessException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+    public static void PrintStudents(List<Student> students){
+        for (Student student : students) {
+            System.out.println(student.id.getValue() + " " + student.name.getValue() + " " +
+                    student.grp.getValue() + " " + student.address.getValue() + " " + student.age.getValue());
         }
     }
 }
