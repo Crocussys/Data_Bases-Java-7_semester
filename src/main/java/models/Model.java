@@ -3,7 +3,6 @@ package models;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 public abstract class Model {
     private ModelField[] getFields() throws IllegalAccessException {
