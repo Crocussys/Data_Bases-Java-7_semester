@@ -1,28 +1,42 @@
 package main;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.support.ConnectionSource;
+import com.j256.ormlite.table.TableUtils;
+
 import java.sql.SQLException;
 
 public class StudentsDb {
-    private final StudentDao student_dao;
-    private final SubjectDao subject_dao;
-    public StudentsDb(){
-        student_dao = new StudentDao();
-        subject_dao = new SubjectDao();
+    private ConnectionSource connectionSource;
+
+    private Dao<Student, String> studentDao;
+
+    private Dao<Subject, String> subjectDao;
+
+    public StudentsDb(){}
+
+    public void connect(String databaseUrl) throws SQLException {
+        connectionSource = new JdbcConnectionSource(databaseUrl);
+        studentDao = DaoManager.createDao(connectionSource, Student.class);
+        subjectDao = DaoManager.createDao(connectionSource, Subject.class);
     }
-    public StudentsDb getInstance(){
-        return this;
+
+    public void disconnect() throws Exception {
+        connectionSource.close();
     }
-    public void connect(String url) throws SQLException {
-        Connection con = DriverManager.getConnection(url);
-        student_dao.setConnection(con);
-        subject_dao.setConnection(con);
+
+    public void createTables() throws SQLException {
+        TableUtils.createTable(connectionSource, Student.class);
+        TableUtils.createTable(connectionSource, Subject.class);
     }
-    public StudentDao getStudentDao(){
-        return student_dao;
+
+    public Dao<Student, String> getStudentDao(){
+        return studentDao;
     }
-    public SubjectDao getSubjectDao(){
-        return subject_dao;
+
+    public Dao<Subject, String> getSubjectDao(){
+        return subjectDao;
     }
 }

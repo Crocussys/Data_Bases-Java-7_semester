@@ -1,79 +1,72 @@
 package main;
 
-import java.io.IOException;
+import com.j256.ormlite.dao.CloseableWrappedIterable;
+import com.j256.ormlite.dao.Dao;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.SQLException;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws Exception {
         StudentsDb db = new StudentsDb();
         db.connect("jdbc:h2:file:" + System.getProperty("user.dir") + "\\students.db");
 
-        db.getStudentDao().createTable();
-        db.getSubjectDao().createTable();
+        db.createTables();
 
         Path path = Path.of("start_db.txt");
         List<String> list = Files.readAllLines(path);
-        Student model = new Student();
         for (String str : list) {
             String[] parts = str.split(";");
-            model.name.setValue(parts[0]);
-            model.address.setValue(parts[1]);
-            model.age.setValue(21);
-            model.grp.setValue("20ПМ");
-            db.getStudentDao().insertStudent(model);
+            Student model = new Student(parts[0], 21);
+            model.setAddress(parts[1]);
+            model.setGrp("20ПМ");
+            db.getStudentDao().create(model);
         }
 
         path = Path.of("start_db2.txt");
         list = Files.readAllLines(path);
-        Subject model2 = new Subject();
         for (String str : list) {
             String[] parts = str.split(";");
-            model2.name.setValue(parts[0]);
-            model2.grp.setValue(parts[1]);
-            db.getSubjectDao().insertSubject(model2);
+            Subject model = new Subject(parts[0], parts[1]);
+            db.getSubjectDao().create(model);
         }
 
-        PrintStudents(db.getStudentDao().getStudentsByGroup("20ПМ"));
-        PrintSubjects(db.getSubjectDao().getSubjectsByGroup("20ПМ"));
+        PrintStudents(db.getStudentDao());
+        PrintSubjects(db.getSubjectDao());
 
-        model.name.setValue("Горелов Викентий Тихонович");
-        model.address.setValue("г. Уфа пер. 2-й Благоварский д. 14");
-        model.age.setValue(17);
-        model.grp.setValue("23ПМ");
-        db.getStudentDao().insertStudent(model);
+        Student model = new Student("Горелов Викентий Тихонович", 17);
+        model.setAddress("г. Уфа пер. 2-й Благоварский д. 14");
+        model.setGrp("23ПМ");
+        db.getStudentDao().create(model);
 
-        model2.name.setValue("Базы данных");
-        model2.grp.setValue("19ПМ");
-        model2.homework.setValue("Сделать лабу 2.3");
-        db.getSubjectDao().insertSubject(model2);
+        Subject model2 = new Subject("Базы данных", "19ПМ");
+        model2.setHomework("Сделать лабу 2.3");
+        db.getSubjectDao().create(model2);
 
-        System.out.println();
-        PrintStudents(db.getStudentDao().getStudentsByGroup("23ПМ"));
-        PrintSubjects(db.getSubjectDao().getSubjectsByGroup("19ПМ"));
+        db.getStudentDao().delete(db.getStudentDao().queryForId("8"));
+        db.getSubjectDao().delete(db.getSubjectDao().queryForId("3"));
 
         System.out.println();
-        PrintStudents(db.getStudentDao().getStudents(18, 25));
-        PrintSubjects(db.getSubjectDao().getSubject("Численные методы"));
+        PrintStudents(db.getStudentDao());
+        PrintSubjects(db.getSubjectDao());
 
-        System.out.println();
-        db.getStudentDao().deleteStudent(8);
-        db.getSubjectDao().deleteSubject(3);
-        PrintStudents(db.getStudentDao().getStudentsByGroup("20ПМ"));
-        PrintSubjects(db.getSubjectDao().getSubjectsByGroup("20ПМ"));
+        db.disconnect();
     }
-    public static void PrintStudents(List<Student> students){
-        for (Student student : students) {
-            System.out.println(student.id.getValue() + " " + student.name.getValue() + " " +
-                    student.grp.getValue() + " " + student.address.getValue() + " " + student.age.getValue());
+    public static void PrintStudents(Dao<Student, String> studentDao) throws Exception {
+        try (CloseableWrappedIterable<Student> ignored = studentDao.getWrappedIterable()) {
+            for (Student student : studentDao) {
+                System.out.println(student.getId() + " " + student.getName() + " " + student.getGrp() + " " +
+                        student.getAddress() + " " + student.getAge());
+            }
         }
     }
-    public static void PrintSubjects(List<Subject> subjects){
-        for (Subject subject : subjects) {
-            System.out.println(subject.id.getValue() + " " + subject.name.getValue() + " " +
-                    subject.grp.getValue() + " " + subject.homework.getValue());
+    public static void PrintSubjects(Dao<Subject, String> subjectDao) throws Exception {
+        try (CloseableWrappedIterable<Subject> ignored = subjectDao.getWrappedIterable()) {
+            for (Subject subject : subjectDao) {
+                System.out.println(subject.getId() + " " + subject.getName() + " " + subject.getGrp() + " " +
+                        subject.getHomework());
+            }
         }
     }
 }
